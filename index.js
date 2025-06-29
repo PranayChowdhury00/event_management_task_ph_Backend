@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
@@ -44,7 +44,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
+    await client.connect();
     const userCollection = client.db("eventDB").collection("users");
    const eventsCollection = client.db("eventDB").collection("events");
     // User registration
@@ -125,11 +125,11 @@ app.post('/events', async (req, res) => {
     const event = {
       title: req.body.title,
       name: req.body.name,
-      dateTime: req.body.dateTime, // Combined date and time from frontend
+      dateTime: req.body.dateTime, 
       location: req.body.location,
       description: req.body.description,
       attendeeCount: parseInt(req.body.attendeeCount) || 0,
-      createdBy: req.session.user._id,
+      createdBy: req.session.user._id.toString(),
       createdAt: new Date()
     };
 
@@ -152,6 +152,90 @@ app.get('/events', async (req, res) => {
   }
 });
 
+
+// Get user's events
+app.get('/my-events', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
+
+  try {
+    const events = await eventsCollection.find({ 
+      createdBy: req.session.user._id.toString() 
+    }).sort({ dateTime: -1 }).toArray();
+    res.send(events);
+  } catch (err) {
+    console.error("Error fetching user's events:", err);
+    res.status(500).send({ message: "Failed to fetch events" });
+  }
+});
+
+// Update event
+
+app.patch('/events/:id', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
+
+  try {
+    const eventId = req.params.id;
+    const { date, time, ...rest } = req.body;
+    
+   
+    const updates = {
+      ...rest,
+      updatedAt: new Date()
+    };
+
+    if (date && time) {
+      updates.dateTime = new Date(`${date}T${time}`).toISOString();
+    }
+
+   
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+
+    const result = await eventsCollection.findOneAndUpdate(
+      { _id: new ObjectId(eventId), createdBy: req.session.user._id.toString() },
+      { $set: filteredUpdates },
+      { returnDocument: 'after' }
+    );
+
+    if (!result.value) {
+      return res.status(404).send({ message: "Event not found or not authorized" });
+    }
+
+    res.send(result.value);
+  } catch (err) {
+    console.error("Error updating event:", err);
+    res.status(500).send({ message: "Failed to update event" });
+  }
+});
+
+// Delete event
+app.delete('/events/:id', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
+
+  try {
+    const eventId = req.params.id;
+    const result = await eventsCollection.findOneAndDelete({
+      _id: new ObjectId(eventId),
+      createdBy: req.session.user._id.toString()
+    });
+
+    if (!result.value) {
+      return res.status(404).send({ message: "Event not found or not authorized" });
+    }
+
+    res.send({ message: "Event deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting event:", err);
+    res.status(500).send({ message: "Failed to delete event" });
+  }
+});
 
 
 
