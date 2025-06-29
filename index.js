@@ -46,7 +46,7 @@ async function run() {
   try {
     // await client.connect();
     const userCollection = client.db("eventDB").collection("users");
-
+   const eventsCollection = client.db("eventDB").collection("events");
     // User registration
     app.post('/users', async (req, res) => {
       const user = req.body;
@@ -114,6 +114,55 @@ async function run() {
       }
       res.send({ message: "This is protected data", user: req.session.user });
     });
+
+    // Add Event endpoint
+app.post('/events', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
+
+  try {
+    const event = {
+      title: req.body.title,
+      name: req.body.name,
+      dateTime: req.body.dateTime, // Combined date and time from frontend
+      location: req.body.location,
+      description: req.body.description,
+      attendeeCount: parseInt(req.body.attendeeCount) || 0,
+      createdBy: req.session.user._id,
+      createdAt: new Date()
+    };
+
+    const result = await eventsCollection.insertOne(event);
+    res.status(201).send(result);
+  } catch (err) {
+    console.error("Error adding event:", err);
+    res.status(500).send({ message: "Failed to add event" });
+  }
+});
+
+// Get events (for testing)
+app.get('/events', async (req, res) => {
+  try {
+    const events = await eventsCollection.find().sort({ dateTime: -1 }).toArray();
+    res.send(events);
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    res.status(500).send({ message: "Failed to fetch events" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
