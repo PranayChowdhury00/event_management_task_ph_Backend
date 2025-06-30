@@ -4,6 +4,7 @@ const cors = require('cors');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 require('dotenv').config();
+const moment = require('moment');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -236,6 +237,80 @@ app.delete('/events/:id', async (req, res) => {
     res.status(500).send({ message: "Failed to delete event" });
   }
 });
+
+
+
+
+app.get('/events/filter', async (req, res) => {
+  const { title, startDate, endDate } = req.query;
+  const query = {};
+
+  if (title) {
+    query.title = { $regex: title, $options: 'i' };
+  }
+
+  if (startDate || endDate) {
+    query.dateTime = {};
+    
+    if (startDate) {
+      // Convert YYYY-MM-DD to start of day in ISO format
+      const start = new Date(startDate);
+      start.setUTCHours(0, 0, 0, 0);
+      query.dateTime.$gte = start.toISOString(); // Compare as ISO string
+    }
+    
+    if (endDate) {
+      // Convert YYYY-MM-DD to end of day in ISO format
+      const end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+      query.dateTime.$lte = end.toISOString(); // Compare as ISO string
+    }
+  }
+
+  try {
+    const events = await eventsCollection.find(query)
+      .sort({ dateTime: 1 }) // Sort by the ISO string
+      .toArray();
+      
+    res.send(events);
+  } catch (error) {
+    console.error("Filter fetch failed", error);
+    res.status(500).send({ message: "Failed to fetch filtered events" });
+  }
+});
+
+
+
+
+app.post('/events/:id/join', async (req, res) => {
+  if (!req.session.user) return res.status(401).send({ message: "Not authenticated" });
+
+  const eventId = req.params.id;
+  const userId = req.session.user._id.toString();
+
+  try {
+    const event = await eventsCollection.findOne({ _id: new ObjectId(eventId) });
+
+    if (!event) return res.status(404).send({ message: "Event not found" });
+    if (event.joinedUsers?.includes(userId)) {
+      return res.status(400).send({ message: "You already joined this event" });
+    }
+
+    const result = await eventsCollection.updateOne(
+      { _id: new ObjectId(eventId) },
+      {
+        $inc: { attendeeCount: 1 },
+        $push: { joinedUsers: userId }
+      }
+    );
+
+    res.send({ message: "Joined event successfully", result });
+  } catch (err) {
+    console.error("Join error:", err);
+    res.status(500).send({ message: "Join failed" });
+  }
+});
+
 
 
 
