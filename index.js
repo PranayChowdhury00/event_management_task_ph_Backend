@@ -12,10 +12,7 @@ const port = process.env.PORT;
 // Middleware
 app.use(express.json({ limit: '5mb' }));
 app.use(cors({
-  origin: ['http://localhost:5173'
-   ,'https://event-management-task-ph.vercel.app',
-   
-  ],
+  origin: ['http://localhost:5173','https://anime-dekho-9d18c.web.app'],
   credentials: true 
 }));
 
