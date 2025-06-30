@@ -12,8 +12,8 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json({ limit: '5mb' }));
 app.use(cors({
-  origin: ['http://localhost:5173'],
-  credentials: true // Allow cookies to be sent
+  origin: ['http://localhost:5173','https://event-management-task-ph.vercel.app'],
+  credentials: true 
 }));
 
 // Session configuration
