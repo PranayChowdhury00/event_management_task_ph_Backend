@@ -26,12 +26,12 @@ app.use(session({
     mongoUrl: `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.50gak.mongodb.net/eventDB?retryWrites=true&w=majority`,
     collectionName: 'sessions'
   }),
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24, // 1 day
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', 
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  }
+  // cookie: {
+  //   maxAge: 1000 * 60 * 60 * 24, // 1 day
+  //   httpOnly: true,
+  //   secure: false, // Set to false when running locally
+  //   sameSite: 'lax'
+  // }
 }));
 
 // MongoDB Connection
@@ -106,22 +106,22 @@ async function run() {
       if (req.session.user) {
         return res.send({ authenticated: true, user: req.session.user });
       }
-      res.send({ authenticated: true });
+      res.send({ authenticated: false });
     });
 
     // Protected route example
     app.get('/protected', (req, res) => {
-      // if (!req.session.user) {
-      //   return res.status(401).send({ message: "Not authenticated" });
-      // }
+      if (!req.session.user) {
+        return res.status(401).send({ message: "Not authenticated" });
+      }
       res.send({ message: "This is protected data", user: req.session.user });
     });
 
     // Add Event endpoint
 app.post('/events', async (req, res) => {
-  // if (!req.session.user) {
-  //   return res.status(401).send({ message: "Not authenticated" });
-  // }
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
 
   try {
     const event = {
@@ -157,9 +157,9 @@ app.get('/events', async (req, res) => {
 
 // Get user's events
 app.get('/my-events', async (req, res) => {
-  // if (!req.session.user) {
-  //   return res.status(401).send({ message: "Not authenticated" });
-  // }
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
 
   try {
     const events = await eventsCollection.find({ 
@@ -175,9 +175,9 @@ app.get('/my-events', async (req, res) => {
 // Update event
 
 app.patch('/events/:id', async (req, res) => {
-  // if (!req.session.user) {
-  //   return res.status(401).send({ message: "Not authenticated" });
-  // }
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
 
   try {
     const eventId = req.params.id;
@@ -217,9 +217,9 @@ app.patch('/events/:id', async (req, res) => {
 
 // Delete event
 app.delete('/events/:id', async (req, res) => {
-  // if (!req.session.user) {
-  //   return res.status(401).send({ message: "Not authenticated" });
-  // }
+  if (!req.session.user) {
+    return res.status(401).send({ message: "Not authenticated" });
+  }
 
   try {
     const eventId = req.params.id;
@@ -284,7 +284,7 @@ app.get('/events/filter', async (req, res) => {
 
 
 app.post('/events/:id/join', async (req, res) => {
-  // if (!req.session.user) return res.status(401).send({ message: "Not authenticated" });
+  if (!req.session.user) return res.status(401).send({ message: "Not authenticated" });
 
   const eventId = req.params.id;
   const userId = req.session.user._id.toString();
