@@ -26,12 +26,12 @@ app.use(session({
     mongoUrl: `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.50gak.mongodb.net/eventDB?retryWrites=true&w=majority`,
     collectionName: 'sessions'
   }),
-  // cookie: {
-  //   maxAge: 1000 * 60 * 60 * 24, 
-  //   httpOnly: true,
-  //   secure: true, 
-  // sameSite:'none'
-  // }
+  cookie: {
+  maxAge: 1000 * 60 * 60 * 24,
+  httpOnly: true,
+  secure: isProduction, // true only if using HTTPS
+  sameSite: isProduction ? 'none' : 'lax'
+}
 }));
 
 // MongoDB Connection
