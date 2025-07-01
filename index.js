@@ -9,6 +9,7 @@ const moment = require('moment');
 const app = express();
 const port = process.env.PORT || 5000;
 
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Middleware
 app.use(express.json({ limit: '5mb' }));
@@ -16,8 +17,24 @@ app.use(cors({
   origin: ['http://localhost:5173','https://anime-dekho-9d18c.web.app'],
   credentials: true 
 }));
-const isProduction = process.env.NODE_ENV === 'production';
+
 // Session configuration
+// app.use(session({
+//   secret: process.env.SESSION_SECRET,
+//   resave: false,
+//   saveUninitialized: false,
+//   store: MongoStore.create({
+//     mongoUrl: `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.50gak.mongodb.net/eventDB?retryWrites=true&w=majority`,
+//     collectionName: 'sessions'
+//   }),
+//   cookie: {
+//     maxAge: 1000 * 60 * 60 * 24, 
+//     httpOnly: true,
+//     secure: false, 
+//   sameSite:'lax'
+//   }
+// }));
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -27,11 +44,11 @@ app.use(session({
     collectionName: 'sessions'
   }),
   cookie: {
-  maxAge: 1000 * 60 * 60 * 24,
-  httpOnly: true,
-  secure: isProduction, // true only if using HTTPS
-  sameSite: isProduction ? 'none' : 'lax'
-}
+    maxAge: 1000 * 60 * 60 * 24,
+    httpOnly: true,
+    secure: isProduction, // true only when on HTTPS
+    sameSite: isProduction ? 'none' : 'lax'
+  }
 }));
 
 // MongoDB Connection
@@ -338,8 +355,7 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-// app.listen(port, () => {
-//   console.log('Server is running at', port);
-// });
+app.listen(port, () => {
+  console.log('Server is running at', port);
+});
 
-module.exports = app;
