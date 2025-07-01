@@ -16,7 +16,7 @@ app.use(cors({
   origin: ['http://localhost:5173','https://anime-dekho-9d18c.web.app'],
   credentials: true 
 }));
-
+const isProduction = process.env.NODE_ENV === 'production';
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -27,10 +27,10 @@ app.use(session({
     collectionName: 'sessions'
   }),
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24, 
+    maxAge: 1000 * 60 * 60 * 24,
     httpOnly: true,
-    secure: true, 
-  sameSite:'none'
+    secure: isProduction, // true in production (HTTPS), false in dev (HTTP)
+    sameSite: isProduction ? 'none' : 'lax' // allow cross-site cookies only in production
   }
 }));
 
