@@ -338,6 +338,8 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
-  console.log('Server is running at', port);
-});
+// app.listen(port, () => {
+//   console.log('Server is running at', port);
+// });
+
+module.exports = app;
